@@ -15,6 +15,7 @@
 
 #include "background.h"
 #include "core/globals.h"
+#include "core/dpi.h"
 #include "theme.h"
 #include "resource.h"
 #include <commdlg.h>
@@ -323,6 +324,12 @@ void ViewClearBackground()
     InvalidateRect(g_hwndEditor, nullptr, TRUE);
 }
 
+static int DpiScaleBg(int value)
+{
+    int dpi = GetWindowDpi(g_hwndMain);
+    return ScaleByDpi(value, dpi);
+}
+
 static INT_PTR CALLBACK OpacityDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     static HWND hEdit = nullptr;
@@ -332,10 +339,10 @@ static INT_PTR CALLBACK OpacityDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARA
     {
         ApplyBackgroundDialogDarkMode(hDlg);
         HFONT hFont = reinterpret_cast<HFONT>(GetStockObject(DEFAULT_GUI_FONT));
-        CreateWindowExW(0, L"STATIC", L"Opacity (0-100%):", WS_CHILD | WS_VISIBLE, 10, 15, 110, 20, hDlg, nullptr, nullptr, nullptr);
-        hEdit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_NUMBER, 125, 12, 60, 22, hDlg, reinterpret_cast<HMENU>(1001), nullptr, nullptr);
-        CreateWindowExW(0, L"BUTTON", L"OK", WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON, 55, 50, 70, 26, hDlg, reinterpret_cast<HMENU>(IDOK), nullptr, nullptr);
-        CreateWindowExW(0, L"BUTTON", L"Cancel", WS_CHILD | WS_VISIBLE, 135, 50, 70, 26, hDlg, reinterpret_cast<HMENU>(IDCANCEL), nullptr, nullptr);
+        CreateWindowExW(0, L"STATIC", L"Opacity (0-100%):", WS_CHILD | WS_VISIBLE, DpiScaleBg(10), DpiScaleBg(15), DpiScaleBg(110), DpiScaleBg(20), hDlg, nullptr, nullptr, nullptr);
+        hEdit = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_NUMBER, DpiScaleBg(125), DpiScaleBg(12), DpiScaleBg(60), DpiScaleBg(22), hDlg, reinterpret_cast<HMENU>(1001), nullptr, nullptr);
+        CreateWindowExW(0, L"BUTTON", L"OK", WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON, DpiScaleBg(55), DpiScaleBg(50), DpiScaleBg(70), DpiScaleBg(26), hDlg, reinterpret_cast<HMENU>(IDOK), nullptr, nullptr);
+        CreateWindowExW(0, L"BUTTON", L"Cancel", WS_CHILD | WS_VISIBLE, DpiScaleBg(135), DpiScaleBg(50), DpiScaleBg(70), DpiScaleBg(26), hDlg, reinterpret_cast<HMENU>(IDCANCEL), nullptr, nullptr);
         for (HWND h = GetWindow(hDlg, GW_CHILD); h; h = GetWindow(h, GW_HWNDNEXT))
             SendMessageW(h, WM_SETFONT, reinterpret_cast<WPARAM>(hFont), TRUE);
         int pct = g_state.background.opacity * 100 / 255;
@@ -398,7 +405,7 @@ static INT_PTR CALLBACK OpacityDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARA
 void ViewBackgroundOpacity()
 {
     HWND hDlg = CreateWindowExW(WS_EX_DLGMODALFRAME, L"#32770", L"Background Opacity",
-                                WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE, 300, 300, 270, 120,
+                                WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE, DpiScaleBg(300), DpiScaleBg(300), DpiScaleBg(270), DpiScaleBg(120),
                                 g_hwndMain, nullptr, GetModuleHandleW(nullptr), nullptr);
     if (!hDlg)
         return;

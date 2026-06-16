@@ -211,6 +211,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         DragFinish(hDrop);
         return 0;
     }
+    case WM_DPICHANGED:
+        ApplyFont();
+        ResizeControls();
+        UpdateStatus();
+        return 0;
     case WM_SIZE:
         ResizeControls();
         UpdateStatus();
