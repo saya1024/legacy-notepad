@@ -89,7 +89,6 @@ void ResizeControls()
     }
     else
         ShowWindow(g_hwndStatus, SW_HIDE);
-    const int pad = 4;
-    MoveWindow(g_hwndEditor, pad, pad, rc.right - pad * 2, rc.bottom - statusH - pad, TRUE);
+    MoveWindow(g_hwndEditor, 0, 0, rc.right, rc.bottom - statusH, TRUE);
     SetupStatusBarParts();
 }
