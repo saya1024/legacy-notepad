@@ -352,6 +352,16 @@ void EditFind()
 {
     if (g_hwndFindDlg)
     {
+        DWORD selStart = 0, selEnd = 0;
+        SendMessageW(g_hwndEditor, EM_GETSEL, reinterpret_cast<WPARAM>(&selStart), reinterpret_cast<LPARAM>(&selEnd));
+        if (selStart != selEnd)
+        {
+            int len = static_cast<int>(selEnd - selStart + 1);
+            std::vector<wchar_t> selBuf(static_cast<size_t>(len), 0);
+            SendMessageW(g_hwndEditor, EM_GETSELTEXT, 0, reinterpret_cast<LPARAM>(selBuf.data()));
+            g_state.findText = selBuf.data();
+            SetWindowTextW(GetDlgItem(g_hwndFindDlg, 1001), g_state.findText.c_str());
+        }
         SetFocus(g_hwndFindDlg);
         return;
     }
