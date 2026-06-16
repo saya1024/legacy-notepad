@@ -18,6 +18,16 @@
 #include "core/globals.h"
 #include "theme.h"
 #include "ui.h"
+
+#ifndef EM_SETMARGINS
+#define EM_SETMARGINS 0x00D3
+#endif
+#ifndef EC_LEFTMARGIN
+#define EC_LEFTMARGIN 0x0001
+#endif
+#ifndef EC_RIGHTMARGIN
+#define EC_RIGHTMARGIN 0x0002
+#endif
 #include "background.h"
 #include "resource.h"
 #include "lang/lang.h"
@@ -110,6 +120,7 @@ void ApplyFont()
     cf.crTextColor = textColor;
     SendMessageW(g_hwndEditor, EM_SETCHARFORMAT, SCF_ALL, reinterpret_cast<LPARAM>(&cf));
     SendMessageW(g_hwndEditor, EM_SETCHARFORMAT, SCF_DEFAULT, reinterpret_cast<LPARAM>(&cf));
+    SendMessageW(g_hwndEditor, EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELPARAM(8, 8));
 }
 
 void ApplyZoom()
