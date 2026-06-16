@@ -45,7 +45,7 @@ static std::wstring GetIniPath()
     GetModuleFileNameW(nullptr, path, MAX_PATH);
     wchar_t *ext = wcsrchr(path, L'.');
     if (ext)
-        wcscpy(ext, L".ini");
+        wcscpy_s(ext, MAX_PATH - (ext - path), L".ini");
     return path;
 }
 
