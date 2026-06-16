@@ -76,6 +76,8 @@ std::wstring GetEditorText()
     StreamOutCookie cookie = {&text};
     EDITSTREAM es = {reinterpret_cast<DWORD_PTR>(&cookie), 0, StreamOutCallback};
     SendMessageW(g_hwndEditor, EM_STREAMOUT, SF_TEXT | SF_UNICODE, reinterpret_cast<LPARAM>(&es));
+    if (!text.empty() && text[0] == 0xFEFF)
+        text.erase(0, 1);
     return text;
 }
 

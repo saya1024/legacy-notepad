@@ -180,30 +180,39 @@ void DoFind(bool forward)
 {
     if (g_state.findText.empty())
         return;
-    std::wstring text = GetEditorText();
     DWORD start = 0, end = 0;
     SendMessageW(g_hwndEditor, EM_GETSEL, reinterpret_cast<WPARAM>(&start), reinterpret_cast<LPARAM>(&end));
-    std::wstring textLower = text;
-    std::transform(textLower.begin(), textLower.end(), textLower.begin(), towlower);
-    std::wstring findLower = g_state.findText;
-    std::transform(findLower.begin(), findLower.end(), findLower.begin(), towlower);
-    size_t pos = std::wstring::npos;
+    FINDTEXTEXW ft = {};
+    ft.lpstrText = g_state.findText.c_str();
     if (forward)
     {
-        pos = textLower.find(findLower, end);
-        if (pos == std::wstring::npos)
-            pos = textLower.find(findLower);
+        ft.chrg.cpMin = end;
+        ft.chrg.cpMax = -1;
     }
     else
     {
-        if (start > 0)
-            pos = textLower.rfind(findLower, start - 1);
-        if (pos == std::wstring::npos)
-            pos = textLower.rfind(findLower);
+        ft.chrg.cpMin = (start > 0) ? start - 1 : 0;
+        ft.chrg.cpMax = 0;
     }
-    if (pos != std::wstring::npos)
+    LRESULT result = SendMessageW(g_hwndEditor, EM_FINDTEXTEXW, forward ? FR_DOWN : 0, reinterpret_cast<LPARAM>(&ft));
+    if (result == -1)
     {
-        SendMessageW(g_hwndEditor, EM_SETSEL, pos, pos + g_state.findText.size());
+        if (forward)
+        {
+            ft.chrg.cpMin = 0;
+            ft.chrg.cpMax = -1;
+        }
+        else
+        {
+            LRESULT textLen = SendMessageW(g_hwndEditor, WM_GETTEXTLENGTH, 0, 0);
+            ft.chrg.cpMin = static_cast<LONG>(textLen);
+            ft.chrg.cpMax = 0;
+        }
+        result = SendMessageW(g_hwndEditor, EM_FINDTEXTEXW, forward ? FR_DOWN : 0, reinterpret_cast<LPARAM>(&ft));
+    }
+    if (result != -1)
+    {
+        SendMessageW(g_hwndEditor, EM_SETSEL, ft.chrgText.cpMin, ft.chrgText.cpMax);
         SendMessageW(g_hwndEditor, EM_SCROLLCARET, 0, 0);
     }
     else
@@ -253,13 +262,17 @@ INT_PTR CALLBACK FindDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
             SendMessageW(g_hwndEditor, EM_GETSEL, reinterpret_cast<WPARAM>(&start), reinterpret_cast<LPARAM>(&end));
             if (start != end)
             {
-                std::wstring text = GetEditorText();
-                std::wstring sel = text.substr(start, end - start);
-                std::transform(sel.begin(), sel.end(), sel.begin(), towlower);
-                std::wstring findLower = g_state.findText;
-                std::transform(findLower.begin(), findLower.end(), findLower.begin(), towlower);
-                if (sel == findLower)
-                    SendMessageW(g_hwndEditor, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(g_state.replaceText.c_str()));
+                wchar_t selBuf[256] = {0};
+                LONG selLen = static_cast<LONG>(SendMessageW(g_hwndEditor, EM_GETSELTEXT, 0, reinterpret_cast<LPARAM>(selBuf)));
+                if (selLen > 0)
+                {
+                    std::wstring sel = selBuf;
+                    std::transform(sel.begin(), sel.end(), sel.begin(), towlower);
+                    std::wstring findLower = g_state.findText;
+                    std::transform(findLower.begin(), findLower.end(), findLower.begin(), towlower);
+                    if (sel == findLower)
+                        SendMessageW(g_hwndEditor, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(g_state.replaceText.c_str()));
+                }
             }
             DoFind(true);
             return TRUE;
