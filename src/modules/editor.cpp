@@ -120,7 +120,7 @@ void ApplyFont()
     cf.crTextColor = textColor;
     SendMessageW(g_hwndEditor, EM_SETCHARFORMAT, SCF_ALL, reinterpret_cast<LPARAM>(&cf));
     SendMessageW(g_hwndEditor, EM_SETCHARFORMAT, SCF_DEFAULT, reinterpret_cast<LPARAM>(&cf));
-    SendMessageW(g_hwndEditor, EM_SETMARGINS, EC_LEFTMARGIN, MAKELPARAM(8, 0));
+    SendMessageW(g_hwndEditor, EM_SETMARGINS, EC_LEFTMARGIN, MAKELPARAM(20, 0));
 }
 
 void ApplyZoom()
