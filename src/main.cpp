@@ -447,6 +447,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             UpdateTitle();
             UpdateStatus();
             break;
+        case IDM_VIEW_LANG_ZH:
+            if (g_hwndFindDlg)
+            {
+                DestroyWindow(g_hwndFindDlg);
+                g_hwndFindDlg = nullptr;
+            }
+            SetLanguage(LangID::ZH);
+            UpdateMenuStrings();
+            UpdateLanguageMenu();
+            UpdateTitle();
+            UpdateStatus();
+            break;
         case IDM_VIEW_ICON_CHANGE:
             ViewChangeIcon();
             break;

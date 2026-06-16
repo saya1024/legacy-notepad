@@ -101,6 +101,7 @@ void UpdateMenuStrings()
     {
         ModifyMenuW(hLangMenu, 0, MF_BYPOSITION | MF_STRING, IDM_VIEW_LANG_EN, lang.menuLangEnglish.c_str());
         ModifyMenuW(hLangMenu, 1, MF_BYPOSITION | MF_STRING, IDM_VIEW_LANG_JA, lang.menuLangJapanese.c_str());
+        ModifyMenuW(hLangMenu, 2, MF_BYPOSITION | MF_STRING, IDM_VIEW_LANG_ZH, lang.menuLangChinese.c_str());
     }
 
     HMENU hHelpMenu = GetSubMenu(hMenu, 5);
@@ -126,4 +127,5 @@ void UpdateLanguageMenu()
     LangID currentLang = GetCurrentLanguage();
     CheckMenuItem(hLangMenu, IDM_VIEW_LANG_EN, (currentLang == LangID::EN) ? MF_CHECKED : MF_UNCHECKED);
     CheckMenuItem(hLangMenu, IDM_VIEW_LANG_JA, (currentLang == LangID::JA) ? MF_CHECKED : MF_UNCHECKED);
+    CheckMenuItem(hLangMenu, IDM_VIEW_LANG_ZH, (currentLang == LangID::ZH) ? MF_CHECKED : MF_UNCHECKED);
 }

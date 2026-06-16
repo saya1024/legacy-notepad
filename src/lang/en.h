@@ -69,6 +69,7 @@ inline LangStrings g_langEN = {
     L"&Language",
     L"&English",
     L"&Japanese",
+    L"&Chinese",
 
     L"Find",
     L"Find and Replace",

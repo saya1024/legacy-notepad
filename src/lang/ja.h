@@ -69,6 +69,7 @@ inline LangStrings g_langJA = {
     L"言語(&L)",
     L"英語(&E)",
     L"日本語(&J)",
+    L"中国語(&C)",
 
     L"検索",
     L"検索と置換",
