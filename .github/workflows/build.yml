@@ -35,8 +35,8 @@ jobs:
       - name: Package (NSIS)
         run: cpack --config build-${{ matrix.arch }}/CPackConfig.cmake -C Release
 
-      - name: Require signing on release builds
-        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.version != '')
+      - name: Require signing on tagged release builds
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: powershell
         env:
           WINDOWS_SIGNING_CERT: ${{ secrets.WINDOWS_SIGNING_CERT }}
