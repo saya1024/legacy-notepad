@@ -26,6 +26,7 @@
 #include <uxtheme.h>
 #include <algorithm>
 #include <cwctype>
+#include <vector>
 
 static HWND g_transparencyEdit = nullptr;
 
@@ -353,6 +354,15 @@ void EditFind()
     {
         SetFocus(g_hwndFindDlg);
         return;
+    }
+    DWORD selStart = 0, selEnd = 0;
+    SendMessageW(g_hwndEditor, EM_GETSEL, reinterpret_cast<WPARAM>(&selStart), reinterpret_cast<LPARAM>(&selEnd));
+    if (selStart != selEnd)
+    {
+        int len = static_cast<int>(selEnd - selStart + 1);
+        std::vector<wchar_t> selBuf(static_cast<size_t>(len), 0);
+        SendMessageW(g_hwndEditor, EM_GETSELTEXT, 0, reinterpret_cast<LPARAM>(selBuf.data()));
+        g_state.findText = selBuf.data();
     }
     const auto &lang = GetLangStrings();
     g_hwndFindDlg = CreateWindowExW(WS_EX_DLGMODALFRAME, L"#32770", lang.dialogFind.c_str(),
