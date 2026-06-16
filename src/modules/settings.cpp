@@ -9,7 +9,7 @@
   ███         ▀██████▀    ███    ███ █████▄▄██  ▀██████▀   ▀██████▀   ▄████▀
                           ███    ███ ▀
 
-  Settings management for persisting user preferences via Windows Registry.
+  Settings management for persisting user preferences via INI file.
   Handles font settings, always on top, window size and position storage and retrieval.
 */
 
@@ -18,184 +18,146 @@
 #include "core/types.h"
 #include <windows.h>
 
-#define SETTINGS_KEY L"Software\\LegacyNotepad"
-#define FONT_NAME_VALUE L"FontName"
-#define FONT_SIZE_VALUE L"FontSize"
-#define FONT_WEIGHT_VALUE L"FontWeight"
-#define FONT_ITALIC_VALUE L"FontItalic"
-#define FONT_UNDERLINE_VALUE L"FontUnderline"
-#define ALWAYS_ON_TOP_VALUE L"AlwaysOnTop"
-#define WINDOW_X_VALUE L"WindowX"
-#define WINDOW_Y_VALUE L"WindowY"
-#define WINDOW_WIDTH_VALUE L"WindowWidth"
-#define WINDOW_HEIGHT_VALUE L"WindowHeight"
+#define SETTINGS_INI L"Notepad.ini"
+
+#define FONT_SECTION L"Font"
+#define FONT_NAME_KEY L"Name"
+#define FONT_SIZE_KEY L"Size"
+#define FONT_WEIGHT_KEY L"Weight"
+#define FONT_ITALIC_KEY L"Italic"
+#define FONT_UNDERLINE_KEY L"Underline"
+
+#define WINDOW_SECTION L"Window"
+#define WINDOW_X_KEY L"X"
+#define WINDOW_Y_KEY L"Y"
+#define WINDOW_WIDTH_KEY L"Width"
+#define WINDOW_HEIGHT_KEY L"Height"
+
+#define SETTINGS_SECTION L"Settings"
+#define ALWAYS_ON_TOP_KEY L"AlwaysOnTop"
+
 #define MIN_FONT_SIZE 8
 #define MAX_FONT_SIZE 72
 
+static std::wstring GetIniPath()
+{
+    wchar_t path[MAX_PATH];
+    GetModuleFileNameW(nullptr, path, MAX_PATH);
+    wchar_t *ext = wcsrchr(path, L'.');
+    if (ext)
+        wcscpy(ext, L".ini");
+    return path;
+}
+
 void LoadFontSettings()
 {
-    HKEY hKey;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, SETTINGS_KEY, 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+    std::wstring iniPath = GetIniPath();
+
+    wchar_t fontName[LF_FACESIZE] = {0};
+    GetPrivateProfileStringW(FONT_SECTION, FONT_NAME_KEY, L"Consolas", fontName, LF_FACESIZE, iniPath.c_str());
+    g_state.fontName = fontName;
+
+    int fontSize = static_cast<int>(GetPrivateProfileIntW(FONT_SECTION, FONT_SIZE_KEY, 16, iniPath.c_str()));
+    if (fontSize >= MIN_FONT_SIZE && fontSize <= MAX_FONT_SIZE)
     {
-        wchar_t fontName[LF_FACESIZE] = {0};
-        DWORD size = sizeof(fontName);
-        if (RegQueryValueExW(hKey, FONT_NAME_VALUE, nullptr, nullptr, reinterpret_cast<LPBYTE>(fontName), &size) == ERROR_SUCCESS)
-        {
-            g_state.fontName = fontName;
-        }
-
-        DWORD fontSize = 0;
-        size = sizeof(fontSize);
-        if (RegQueryValueExW(hKey, FONT_SIZE_VALUE, nullptr, nullptr, reinterpret_cast<LPBYTE>(&fontSize), &size) == ERROR_SUCCESS)
-        {
-            if (fontSize >= MIN_FONT_SIZE && fontSize <= MAX_FONT_SIZE)
-            {
-                g_state.fontSize = static_cast<int>(fontSize);
-            }
-        }
-
-        DWORD weight = FW_NORMAL;
-        size = sizeof(weight);
-        if (RegQueryValueExW(hKey, FONT_WEIGHT_VALUE, nullptr, nullptr, reinterpret_cast<LPBYTE>(&weight), &size) == ERROR_SUCCESS)
-        {
-            g_state.fontWeight = static_cast<int>(weight);
-        }
-
-        DWORD italic = 0;
-        size = sizeof(italic);
-        if (RegQueryValueExW(hKey, FONT_ITALIC_VALUE, nullptr, nullptr, reinterpret_cast<LPBYTE>(&italic), &size) == ERROR_SUCCESS)
-        {
-            g_state.fontItalic = (italic != 0);
-        }
-
-        DWORD underline = 0;
-        size = sizeof(underline);
-        if (RegQueryValueExW(hKey, FONT_UNDERLINE_VALUE, nullptr, nullptr, reinterpret_cast<LPBYTE>(&underline), &size) == ERROR_SUCCESS)
-        {
-            g_state.fontUnderline = (underline != 0);
-        }
-
-        DWORD top = 0;
-        size = sizeof(top);
-        if (RegQueryValueExW(hKey, ALWAYS_ON_TOP_VALUE, nullptr, nullptr, reinterpret_cast<LPBYTE>(&top), &size) == ERROR_SUCCESS)
-        {
-            g_state.alwaysOnTop = (top != 0);
-        }
-
-        RegCloseKey(hKey);
+        g_state.fontSize = fontSize;
     }
+
+    int weight = static_cast<int>(GetPrivateProfileIntW(FONT_SECTION, FONT_WEIGHT_KEY, FW_NORMAL, iniPath.c_str()));
+    g_state.fontWeight = weight;
+
+    int italic = static_cast<int>(GetPrivateProfileIntW(FONT_SECTION, FONT_ITALIC_KEY, 0, iniPath.c_str()));
+    g_state.fontItalic = (italic != 0);
+
+    int underline = static_cast<int>(GetPrivateProfileIntW(FONT_SECTION, FONT_UNDERLINE_KEY, 0, iniPath.c_str()));
+    g_state.fontUnderline = (underline != 0);
+
+    int top = static_cast<int>(GetPrivateProfileIntW(SETTINGS_SECTION, ALWAYS_ON_TOP_KEY, 0, iniPath.c_str()));
+    g_state.alwaysOnTop = (top != 0);
 }
 
 void SaveFontSettings()
 {
-    HKEY hKey;
-    if (RegCreateKeyExW(HKEY_CURRENT_USER, SETTINGS_KEY, 0, nullptr, 0, KEY_WRITE, nullptr, &hKey, nullptr) == ERROR_SUCCESS)
-    {
-        RegSetValueExW(hKey, FONT_NAME_VALUE, 0, REG_SZ,
-                       reinterpret_cast<const BYTE *>(g_state.fontName.c_str()),
-                       static_cast<DWORD>((g_state.fontName.length() + 1) * sizeof(wchar_t)));
+    std::wstring iniPath = GetIniPath();
 
-        DWORD fontSize = static_cast<DWORD>(g_state.fontSize);
-        RegSetValueExW(hKey, FONT_SIZE_VALUE, 0, REG_DWORD,
-                       reinterpret_cast<const BYTE *>(&fontSize),
-                       sizeof(fontSize));
+    WritePrivateProfileStringW(FONT_SECTION, FONT_NAME_KEY, g_state.fontName.c_str(), iniPath.c_str());
 
-        DWORD weight = static_cast<DWORD>(g_state.fontWeight);
-        RegSetValueExW(hKey, FONT_WEIGHT_VALUE, 0, REG_DWORD,
-                       reinterpret_cast<const BYTE *>(&weight),
-                       sizeof(weight));
+    wchar_t buf[32];
+    swprintf(buf, 32, L"%d", g_state.fontSize);
+    WritePrivateProfileStringW(FONT_SECTION, FONT_SIZE_KEY, buf, iniPath.c_str());
 
-        DWORD italic = g_state.fontItalic ? 1 : 0;
-        RegSetValueExW(hKey, FONT_ITALIC_VALUE, 0, REG_DWORD,
-                       reinterpret_cast<const BYTE *>(&italic),
-                       sizeof(italic));
+    swprintf(buf, 32, L"%d", g_state.fontWeight);
+    WritePrivateProfileStringW(FONT_SECTION, FONT_WEIGHT_KEY, buf, iniPath.c_str());
 
-        DWORD underline = g_state.fontUnderline ? 1 : 0;
-        RegSetValueExW(hKey, FONT_UNDERLINE_VALUE, 0, REG_DWORD,
-                       reinterpret_cast<const BYTE *>(&underline),
-                       sizeof(underline));
+    swprintf(buf, 32, L"%d", g_state.fontItalic ? 1 : 0);
+    WritePrivateProfileStringW(FONT_SECTION, FONT_ITALIC_KEY, buf, iniPath.c_str());
 
-        DWORD top = g_state.alwaysOnTop ? 1 : 0;
-        RegSetValueExW(hKey, ALWAYS_ON_TOP_VALUE, 0, REG_DWORD,
-                       reinterpret_cast<const BYTE *>(&top),
-                       sizeof(top));
+    swprintf(buf, 32, L"%d", g_state.fontUnderline ? 1 : 0);
+    WritePrivateProfileStringW(FONT_SECTION, FONT_UNDERLINE_KEY, buf, iniPath.c_str());
 
-        RegCloseKey(hKey);
-    }
+    swprintf(buf, 32, L"%d", g_state.alwaysOnTop ? 1 : 0);
+    WritePrivateProfileStringW(SETTINGS_SECTION, ALWAYS_ON_TOP_KEY, buf, iniPath.c_str());
 }
 
 void LoadWindowSettings()
 {
-    HKEY hKey;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, SETTINGS_KEY, 0, KEY_READ, &hKey) == ERROR_SUCCESS)
-    {
-        DWORD x = 0;
-        DWORD size = sizeof(x);
-        if (RegQueryValueExW(hKey, WINDOW_X_VALUE, nullptr, nullptr, reinterpret_cast<LPBYTE>(&x), &size) == ERROR_SUCCESS)
-        {
-            g_state.windowX = static_cast<int>(x);
-        }
-        DWORD y = 0;
-        size = sizeof(y);
-        if (RegQueryValueExW(hKey, WINDOW_Y_VALUE, nullptr, nullptr, reinterpret_cast<LPBYTE>(&y), &size) == ERROR_SUCCESS)
-        {
-            g_state.windowY = static_cast<int>(y);
-        }
-        DWORD width = 0;
-        size = sizeof(width);
-        if (RegQueryValueExW(hKey, WINDOW_WIDTH_VALUE, nullptr, nullptr, reinterpret_cast<LPBYTE>(&width), &size) == ERROR_SUCCESS)
-        {
-            if (width > 0)
-            {
-                g_state.windowWidth = static_cast<int>(width);
-            }
-        }
-        DWORD height = 0;
-        size = sizeof(height);
-        if (RegQueryValueExW(hKey, WINDOW_HEIGHT_VALUE, nullptr, nullptr, reinterpret_cast<LPBYTE>(&height), &size) == ERROR_SUCCESS)
-        {
-            if (height > 0)
-            {
-                g_state.windowHeight = static_cast<int>(height);
-            }
-        }
+    std::wstring iniPath = GetIniPath();
 
-        RegCloseKey(hKey);
-    }
-    RECT rc = {g_state.windowX, g_state.windowY, g_state.windowX + g_state.windowWidth, g_state.windowY + g_state.windowHeight};
-    HMONITOR hMonitor = MonitorFromRect(&rc, MONITOR_DEFAULTTONULL);
-    if (!hMonitor)
+    wchar_t buf[32];
+
+    GetPrivateProfileStringW(WINDOW_SECTION, WINDOW_X_KEY, L"", buf, 32, iniPath.c_str());
+    if (buf[0])
     {
-        g_state.windowX = CW_USEDEFAULT;
-        g_state.windowY = CW_USEDEFAULT;
+        int x = static_cast<int>(wcstol(buf, nullptr, 10));
+        g_state.windowX = x;
+    }
+
+    GetPrivateProfileStringW(WINDOW_SECTION, WINDOW_Y_KEY, L"", buf, 32, iniPath.c_str());
+    if (buf[0])
+    {
+        int y = static_cast<int>(wcstol(buf, nullptr, 10));
+        g_state.windowY = y;
+    }
+
+    int width = static_cast<int>(GetPrivateProfileIntW(WINDOW_SECTION, WINDOW_WIDTH_KEY, 0, iniPath.c_str()));
+    if (width > 0)
+    {
+        g_state.windowWidth = width;
+    }
+
+    int height = static_cast<int>(GetPrivateProfileIntW(WINDOW_SECTION, WINDOW_HEIGHT_KEY, 0, iniPath.c_str()));
+    if (height > 0)
+    {
+        g_state.windowHeight = height;
+    }
+
+    if (g_state.windowX != CW_USEDEFAULT && g_state.windowY != CW_USEDEFAULT)
+    {
+        RECT rc = {g_state.windowX, g_state.windowY, g_state.windowX + g_state.windowWidth, g_state.windowY + g_state.windowHeight};
+        HMONITOR hMonitor = MonitorFromRect(&rc, MONITOR_DEFAULTTONULL);
+        if (!hMonitor)
+        {
+            g_state.windowX = CW_USEDEFAULT;
+            g_state.windowY = CW_USEDEFAULT;
+        }
     }
 }
 
 void SaveWindowSettings()
 {
-    HKEY hKey;
-    if (RegCreateKeyExW(HKEY_CURRENT_USER, SETTINGS_KEY, 0, nullptr, 0, KEY_WRITE, nullptr, &hKey, nullptr) == ERROR_SUCCESS)
-    {
-        DWORD x = static_cast<DWORD>(g_state.windowX);
-        RegSetValueExW(hKey, WINDOW_X_VALUE, 0, REG_DWORD,
-                       reinterpret_cast<const BYTE *>(&x),
-                       sizeof(x));
+    std::wstring iniPath = GetIniPath();
 
-        DWORD y = static_cast<DWORD>(g_state.windowY);
-        RegSetValueExW(hKey, WINDOW_Y_VALUE, 0, REG_DWORD,
-                       reinterpret_cast<const BYTE *>(&y),
-                       sizeof(y));
+    wchar_t buf[32];
 
-        DWORD width = static_cast<DWORD>(g_state.windowWidth);
-        RegSetValueExW(hKey, WINDOW_WIDTH_VALUE, 0, REG_DWORD,
-                       reinterpret_cast<const BYTE *>(&width),
-                       sizeof(width));
+    swprintf(buf, 32, L"%d", g_state.windowX);
+    WritePrivateProfileStringW(WINDOW_SECTION, WINDOW_X_KEY, buf, iniPath.c_str());
 
-        DWORD height = static_cast<DWORD>(g_state.windowHeight);
-        RegSetValueExW(hKey, WINDOW_HEIGHT_VALUE, 0, REG_DWORD,
-                       reinterpret_cast<const BYTE *>(&height),
-                       sizeof(height));
+    swprintf(buf, 32, L"%d", g_state.windowY);
+    WritePrivateProfileStringW(WINDOW_SECTION, WINDOW_Y_KEY, buf, iniPath.c_str());
 
-        RegCloseKey(hKey);
-    }
+    swprintf(buf, 32, L"%d", g_state.windowWidth);
+    WritePrivateProfileStringW(WINDOW_SECTION, WINDOW_WIDTH_KEY, buf, iniPath.c_str());
+
+    swprintf(buf, 32, L"%d", g_state.windowHeight);
+    WritePrivateProfileStringW(WINDOW_SECTION, WINDOW_HEIGHT_KEY, buf, iniPath.c_str());
 }
